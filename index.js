@@ -1,5 +1,5 @@
 import { createApi } from "unsplash-js";
-import fetch from "node-fetch";  // For node environment fetch
+import fetch from "node-fetch"; 
 import fs from "fs";
 import dotenv from "dotenv";
 
