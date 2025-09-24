@@ -324,7 +324,20 @@ async function startSock() {
 
     if (command === "!menu" || command === "!help") {
       await client.sendMessage(msg.key.remoteJid, {
-        text: `📌 *Bot Menu* 📌\n\n!help - Show help\n!weather <city>\n!wiki <query>\n!ytsearch <query>\n!chat <prompt>\n!kakuli <prompt>\n!sticker - Create sticker from image/video\n!textsticker - Create sticker with text (max 30 chars, images only)`
+        text: `📌 *Bot Menu* 📌
+
+!help - Show help
+!weather <city>
+!wiki <query>
+!ytsearch <query>
+!chat <prompt>
+!kakuli <prompt>
+!sticker - Create sticker from image/video
+!textsticker - Create sticker with text (max 30 chars, images only)
+!voice <text>,<VoiceName> - Generate voice from text (max 500 chars)
+
+📢 *Available Voices:*
+Achernar, Achird, Algenib, Algieba, Alnilam, Aoede, Autonoe, Callirrhoe, Charon, Despina, Enceladus, Erinome, Fenrir, Gacrux, Iapetus, Kore, Laomedeia, Leda, Orus, Pulcherrima, Puck, Rasalgethi, Sadachbia, Sadaltager, Schedar, Sulafat, Umbriel, Vindemiatrix, Zephyr, Zubenelgenubi`
       });
     } else if (command === "!sticker") {
       await handleStickerCommand(client, msg, false);
@@ -346,6 +359,16 @@ async function startSock() {
         console.error("Kakuli command error:", e);
         await client.sendMessage(msg.key.remoteJid, {
           text: "❌ Failed to execute !kakuli command."
+        });
+      }
+    } else if (command === "!voice") {
+      try {
+        const { handleVoiceCommand } = await import("./voice.js");
+        await handleVoiceCommand(client, msg, args);
+      } catch (e) {
+        console.error("Voice command error:", e);
+        await client.sendMessage(msg.key.remoteJid, {
+          text: "❌ Failed to execute !voice command."
         });
       }
     }
