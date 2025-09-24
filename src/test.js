@@ -74,26 +74,25 @@ async function createVideoSticker(videoBuffer) {
     const targetDuration = Math.min(duration, 10);
 
     await new Promise((resolve, reject) => {
-      ffmpeg(inputPath)
-        .inputOptions(["-ignore_chapters 1", `-t ${targetDuration}`])
-        .outputOptions([
-          "-vcodec libwebp",
-          "-vf scale=512:512:force_original_aspect_ratio=decrease,fps=10,pad=512:512:-1:-1:color=white@0.0",
-          "-loop 0",
-          "-preset default",
-          "-an",
-          "-fps_mode vfr",
-          "-s 512:512",
-          "-quality 80",
-          "-compression_level 6",
-          "-fs 800K"
-        ])
-        .on("start", cmd => console.log("Processing video:", cmd))
-        .on("progress", progress => console.log("Progress:", progress.timemark))
-        .on("error", reject)
-        .on("end", resolve)
-        .save(outputPath);
-    });
+  ffmpeg(inputPath)
+    .inputOptions([`-t ${targetDuration}`])
+    .outputOptions([
+      "-vcodec libwebp",
+      // Scale so smaller side fits 512, crop to 512x512
+      "-vf scale=512:512:force_original_aspect_ratio=increase,crop=512:512,fps=15",
+      "-loop 0",
+      "-preset default",
+      "-an",
+      "-lossless 1",
+      "-compression_level 6"
+    ])
+    .on("start", cmd => console.log("Processing video:", cmd))
+    .on("progress", progress => console.log("Progress:", progress.timemark))
+    .on("error", reject)
+    .on("end", resolve)
+    .save(outputPath);
+});
+
 
     return fs.readFileSync(outputPath);
   } catch (error) {
