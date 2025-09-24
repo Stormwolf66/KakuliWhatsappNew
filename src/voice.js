@@ -7,7 +7,7 @@ import { PassThrough } from "stream";
 
 dotenv.config();
 
-const GEMINI_TTS_API_KEY = process.env.GEMINI_API_KEY2;
+const GEMINI_TTS_API_KEY = process.env.GEMINI_API_KEY;
 const MODEL_ID = "gemini-2.5-flash-preview-tts";
 const GENERATE_CONTENT_API = "streamGenerateContent";
 
