@@ -55,11 +55,19 @@ async function generateTTS(text, voiceName, filename = "kakuli-tts.mp3") {
       );
 
       const data = await res.json();
-      const candidate = data[0]?.candidates?.[0];
-      if (!candidate) continue;
+
+      // Check candidate exists
+      const candidate = data?.candidates?.[0];
+      if (!candidate || !candidate.content?.parts) {
+        console.error("❌ Invalid TTS API response:", JSON.stringify(data, null, 2));
+        continue;
+      }
 
       const audioPart = candidate.content.parts.find(p => p?.inlineData?.data);
-      if (!audioPart) continue;
+      if (!audioPart) {
+        console.error("❌ No audio data in this chunk:", JSON.stringify(candidate.content.parts, null, 2));
+        continue;
+      }
 
       pcmBuffers.push(Buffer.from(audioPart.inlineData.data, "base64"));
     } catch (err) {
@@ -91,8 +99,19 @@ async function generateTTS(text, voiceName, filename = "kakuli-tts.mp3") {
 
 // Handler for !voice command
 export async function handleVoiceCommand(client, msg, args) {
-  const input = args.join(" ");
-  const [text, voiceName] = input.split(",").map(s => s.trim());
+  const input = args.join(" ").trim();
+
+  // Split by last comma to allow commas in text
+  const lastCommaIndex = input.lastIndexOf(",");
+  if (lastCommaIndex === -1) {
+    await client.sendMessage(msg.key.remoteJid, {
+      text: "❌ Usage: !voice Your text here,VoiceName\nExample: !voice Hello,Orus"
+    });
+    return;
+  }
+
+  const text = input.slice(0, lastCommaIndex).trim();
+  const voiceName = input.slice(lastCommaIndex + 1).trim();
 
   // Validate input
   if (!text || !voiceName) {
