@@ -7,16 +7,16 @@ import { PassThrough } from "stream";
 
 dotenv.config();
 
-const GEMINI_TTS_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_TTS_API_KEY = process.env.GEMINI_API_KEY3;
 const MODEL_ID = "gemini-2.5-flash-preview-tts";
 const GENERATE_CONTENT_API = "streamGenerateContent";
 
 // Allowed voices
 const allowedVoices = [
-  "Achernar","Achird","Algenib","Algieba","Alnilam","Aoede","Autonoe",
-  "Callirrhoe","Charon","Despina","Enceladus","Erinome","Fenrir","Gacrux",
-  "Iapetus","Kore","Laomedeia","Leda","Orus","Pulcherrima","Puck","Rasalgethi",
-  "Sadachbia","Sadaltager","Schedar","Sulafat","Umbriel","Vindemiatrix","Zephyr","Zubenelgenubi"
+  "Achernar", "Achird", "Algenib", "Algieba", "Alnilam", "Aoede", "Autonoe",
+  "Callirrhoe", "Charon", "Despina", "Enceladus", "Erinome", "Fenrir", "Gacrux",
+  "Iapetus", "Kore", "Laomedeia", "Leda", "Orus", "Pulcherrima", "Puck", "Rasalgethi",
+  "Sadachbia", "Sadaltager", "Schedar", "Sulafat", "Umbriel", "Vindemiatrix", "Zephyr", "Zubenelgenubi"
 ];
 
 // Split long text into chunks for TTS
@@ -30,14 +30,13 @@ function splitText(text, maxLength = 300) {
   return chunks;
 }
 
-// Generate TTS using Gemini API and convert to MP3
 async function generateTTS(text, voiceName, filename = "kakuli-tts.mp3") {
   const textChunks = splitText(text);
   const pcmBuffers = [];
 
   for (const chunk of textChunks) {
     const payload = {
-      contents: [{ role: "user", parts: [{ text: chunk }] }],
+      contents: [{ role: "user", text: chunk }],
       generationConfig: {
         responseModalities: ["AUDIO"],
         speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
@@ -56,20 +55,16 @@ async function generateTTS(text, voiceName, filename = "kakuli-tts.mp3") {
 
       const data = await res.json();
 
-      // Check candidate exists
-      const candidate = data?.candidates?.[0];
-      if (!candidate || !candidate.content?.parts) {
-        console.error("❌ Invalid TTS API response:", JSON.stringify(data, null, 2));
-        continue;
+      // Check candidates properly
+      const candidates = data?.candidates ?? [];
+      for (const cand of candidates) {
+        const parts = cand?.content?.[0]?.parts ?? [];
+        const audioPart = parts.find(p => p?.inlineData?.data);
+        if (audioPart) {
+          pcmBuffers.push(Buffer.from(audioPart.inlineData.data, "base64"));
+        }
       }
 
-      const audioPart = candidate.content.parts.find(p => p?.inlineData?.data);
-      if (!audioPart) {
-        console.error("❌ No audio data in this chunk:", JSON.stringify(candidate.content.parts, null, 2));
-        continue;
-      }
-
-      pcmBuffers.push(Buffer.from(audioPart.inlineData.data, "base64"));
     } catch (err) {
       console.error("TTS generation error:", err);
     }
@@ -97,21 +92,11 @@ async function generateTTS(text, voiceName, filename = "kakuli-tts.mp3") {
   return audioPath;
 }
 
+
 // Handler for !voice command
 export async function handleVoiceCommand(client, msg, args) {
-  const input = args.join(" ").trim();
-
-  // Split by last comma to allow commas in text
-  const lastCommaIndex = input.lastIndexOf(",");
-  if (lastCommaIndex === -1) {
-    await client.sendMessage(msg.key.remoteJid, {
-      text: "❌ Usage: !voice Your text here,VoiceName\nExample: !voice Hello,Orus"
-    });
-    return;
-  }
-
-  const text = input.slice(0, lastCommaIndex).trim();
-  const voiceName = input.slice(lastCommaIndex + 1).trim();
+  const input = args.join(" ");
+  const [text, voiceName] = input.split(",").map(s => s.trim());
 
   // Validate input
   if (!text || !voiceName) {
